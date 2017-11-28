@@ -1,0 +1,40 @@
+Kurt Hetrick: 10 February 2014
+------------------------------
+
+1. Copy the dir /ddl_annovar_db over to /usr/local/sandbox.
+
+Permissions should be readable (and I think executable would be fine as well) by DDL user group but not write.
+
+General Question (document these "dbs"?)
+
+2. Copy the dir /ddl_pipeline_files over to /usr/local/sandbox
+
+Permissions are the same as #1.
+
+3. Both of these should go to a network share that cannot be seen via the browser i.p., and on an isilon network share
+
+This Share is only accesible to root.
+
+4. Executables
+
+	A. BWA is bwa-0.7.5a
+	B. Picard is 1.103
+		a. Except for CalculateHSmetrics.jar which is modified by Brian from the 1.57 source code.
+	C. GATK is GATK-2.7-4
+	D. verifyBamID is 1.0.0 (2012/06/20)
+	E. bedtools is version 2.16.2 (will probably not be used by Sean)
+	F. samtools is version 0.1.18 (I am not sure at the moment if Sean uses this or not)
+	G. bgzip is version 0.2.6
+	H. tabix is version 0.2.6
+	I. vcfutils.pl is distributed with samtools version 0.1.18
+	J. annovar version 2013_02_21
+	K. Also need to have the annovar stuff (at least some perl scripts) over in here
+	
+	--For right now, copy the dir ddl_exectuables over to a network share--if we are pressed to move them to a local space, then the dir can go to /usr/local/sandbox as well.
+	--both to the same network share as the other two folders above, also some network share where it is readable by ddl group.
+
+5. Others
+	R. is 2.15.0 (I am assuming that Keith used a rpm here).
+		A. install packages
+			install.packages(c("ggplot2", "gtools", "caTools", "gdata", "reshape", "gsalib"))
+			R CMD INSTALL /isilon/isilon-cgc/ddl_programs/gplots_2.11.0.tar.gz
