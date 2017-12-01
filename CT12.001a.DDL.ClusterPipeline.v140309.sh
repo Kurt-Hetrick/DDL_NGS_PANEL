@@ -23,24 +23,26 @@ ALL_TARGET_BED=${13}
 
 PLATFORM_UNIT=$FLOWCELL"_"$SAMPLE_NUMBER"_"$INDEX
 
-CORE_PATH="/isilon/ddl/SS_0500181/"
-PIPE_FILES="/usr/local/sandbox/ddl_pipeline_files/"
-BWA_DIR="/isilon/isilon-cgc/ddl_programs/bwa-0.7.5a/"
-PICARD_DIR="/isilon/isilon-cgc/ddl_programs/picard-tools-1.103/"
-GATK_DIR="/isilon/isilon-cgc/ddl_programs/GenomeAnalysisTK-2.7-4-g6f46d11/"
-VERIFY_DIR="/isilon/isilon-cgc/ddl_programs/verifyBamID_20120620/bin/"
-TABIX_DIR="/isilon/isilon-cgc/ddl_programs/tabix-0.2.6/"
-BEDTOOLS_DIR="/isilon/isilon-cgc/ddl_programs/BEDTools-Version-2.16.2/bin/"
-CIDRSEQSUITE_DIR="/isilon/isilon-cgc/ddl_programs/"
-SAMTOOLS_DIR="/isilon/isilon-cgc/ddl_programs/samtools-0.1.18/"
+CORE_PATH="/mnt/clinical/ddl/NGS/Panel_Data"
+# grap /usr/local/sandbox/ddl_pipeline_files/
+PIPE_FILES="/mnt/clinical/ddl/NGS/Panel_Resources/pipeline_files"
+BWA_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/bwa-0.7.5a"
+PICARD_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/picard-tools-1.103"
+GATK_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/GenomeAnalysisTK-2.7-4-g6f46d11"
+VERIFY_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/verifyBamID_20120620/bin"
+TABIX_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/tabix-0.2.6"
+BEDTOOLS_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/BEDTools-Version-2.16.2/bin"
+CIDRSEQSUITE_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs"
+SAMTOOLS_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/samtools-0.1.18"
 REF_GENOME="human_g1k_v37_decoy.fasta"
-BED_DIR=$CORE_PATH"/BED/"
+BED_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/bed_files"
 GENE_LIST="RefSeqGene.GRCh37.Ready.txt"
 BARCODE_BED="BarcodeSNPs.NGS1.v1.bed"
 KNOWN_INDEL_1="Mills_and_1000G_gold_standard.indels.b37.vcf"
 KNOWN_INDEL_2="1000G_phase1.indels.b37.vcf"
 DBSNP="dbsnp_138.b37.vcf"
 VERIFY_VCF="Omni25_genotypes_1525_samples_v2.b37.PASS.ALL.sites.vcf"
+JAVA_DIR="/mnt/clinical/ddl/NGS/Panel_Resources/programs/jdk1.7.0_25/bin"
 
 mkdir -p $CORE_PATH/$PROJECT/$SM_TAG/BAM
 mkdir -p $CORE_PATH/$PROJECT/$SM_TAG/HC_BAM
@@ -69,7 +71,7 @@ $PIPE_FILES/$REF_GENOME \
 $CORE_PATH/$PROJECT/FASTQ/$SM_TAG"_"$SAMPLE_NUMBER"_L001_R1_001.fastq.gz" \
 $CORE_PATH/$PROJECT/FASTQ/$SM_TAG"_"$SAMPLE_NUMBER"_L001_R2_001.fastq.gz" \
 -R "@RG\tID:$FLOWCELL\tPU:$PLATFORM_UNIT\tPL:$PLATFORM\tLB:$LIBRARY_NAME\tDT:$RUN_DATE\tSM:$SM_TAG\tCN:$CENTER\tDS:$DESCRIPTION" \
-| java -jar $PICARD_DIR/MergeSamFiles.jar \
+| $JAVA_DIR/java -jar $PICARD_DIR/MergeSamFiles.jar \
 INPUT=/dev/stdin \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".original.bam" \
 VALIDATION_STRINGENCY=SILENT \
@@ -79,7 +81,7 @@ CREATE_INDEX=true
 
 ## --Mark Duplicates with Picard, write a duplicate report
 
-java -jar $PICARD_DIR/MarkDuplicates.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/MarkDuplicates.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".original.bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".dup.bam" \
 VALIDATION_STRINGENCY=SILENT \
@@ -88,7 +90,7 @@ CREATE_INDEX=true
 
 ## --Realigner Target Creator only on the baits, turn off downsampling
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
 -I $CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".dup.bam" \
 -R $PIPE_FILES/$REF_GENOME \
@@ -100,7 +102,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --Local realignment turn off downsampling
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T IndelRealigner \
 -I $CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".dup.bam" \
 -R $PIPE_FILES/$REF_GENOME \
@@ -112,7 +114,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --BQSR using data only from the baited intervals, turn off downsampling--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -I $CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".realign.bam" \
 -R $PIPE_FILES/$REF_GENOME \
@@ -125,7 +127,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --write out file with new scores, retain old scores, no downsampling
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R $PIPE_FILES/$REF_GENOME \
 -I $CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".realign.bam" \
@@ -138,7 +140,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --Alignment Summary Metrics--
 
-java -jar $PICARD_DIR/CollectAlignmentSummaryMetrics.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/CollectAlignmentSummaryMetrics.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/Alignment_Summary/$SM_TAG"_alignment_summary_metrics.txt" \
 R=$PIPE_FILES/$REF_GENOME \
@@ -146,7 +148,7 @@ VALIDATION_STRINGENCY=SILENT
 
 ## --Base Call Quality Score Distribution--
 
-java -jar $PICARD_DIR/QualityScoreDistribution.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/QualityScoreDistribution.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/BaseCall_Qscore_Distribution/Metrics/$SM_TAG"_quality_score_distribution.txt" \
 CHART=$CORE_PATH/$PROJECT/$SM_TAG/Reports/BaseCall_Qscore_Distribution/PDF/$SM_TAG"_quality_score_distribution.pdf" \
@@ -156,7 +158,7 @@ INCLUDE_NO_CALLS=true
 
 ## --GC Bias Metrics--
 
-java -jar $PICARD_DIR/CollectGcBiasMetrics.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/CollectGcBiasMetrics.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/GC_Bias/Metrics/$SM_TAG"_gc_bias_metrics.txt" \
 CHART_OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/GC_Bias/PDF/$SM_TAG"_gc_bias_metrics.pdf" \
@@ -166,7 +168,7 @@ VALIDATION_STRINGENCY=SILENT
 
 ## --Insert Size--
 
-java -jar $PICARD_DIR/CollectInsertSizeMetrics.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/CollectInsertSizeMetrics.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/Insert_Size/Metrics/$SM_TAG"_insert_size_metrics.txt" \
 H=$CORE_PATH/$PROJECT/$SM_TAG/Reports/Insert_Size/PDF/$SM_TAG"_insert_size_metrics_histogram.pdf" \
@@ -175,7 +177,7 @@ VALIDATION_STRINGENCY=SILENT
 
 ## --Mean Quality By Cycle--
 
-java -jar $PICARD_DIR/MeanQualityByCycle.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/MeanQualityByCycle.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/Mean_Quality_ByCycle/Metrics/$SM_TAG"_mean_quality_by_cycle.txt" \
 CHART=$CORE_PATH/$PROJECT/$SM_TAG/Reports/Mean_Quality_ByCycle/PDF/$SM_TAG"_mean_quality_by_cycle_chart.pdf" \
@@ -184,7 +186,7 @@ VALIDATION_STRINGENCY=SILENT
 
 ## --Depth of Coverage for the regions of interest--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R $PIPE_FILES/$REF_GENOME \
 -I $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
@@ -243,7 +245,7 @@ $CORE_PATH/$PROJECT/$SM_TAG/ANALYSIS/$SM_TAG"_"$ROI_BED".PER.INTERVAL.SUMMARY.LT
 
 ## --Depth of Coverage for the all targets bed file--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R $PIPE_FILES/$REF_GENOME \
 -I $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
@@ -311,7 +313,7 @@ $CORE_PATH/$PROJECT/$SM_TAG/ANALYSIS/$SM_TAG"_"$ALL_TARGET_BED".PER.INTERVAL.SUM
 
 ## --Calculate HS metrics and also calculate a per target coverage report--
 
-java -jar $PICARD_DIR/CalculateHsMetrics.jar \
+$JAVA_DIR/java -jar $PICARD_DIR/CalculateHsMetrics.jar \
 INPUT=$CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 OUTPUT=$CORE_PATH/$PROJECT/$SM_TAG/Reports/HybSelection/$SM_TAG"_hybridization_selection_metrics.txt" \
 PER_TARGET_COVERAGE=$CORE_PATH/$PROJECT/$SM_TAG/Reports/HybSelection/Per_Target_Coverage/$SM_TAG"_per_target_coverage.txt" \
@@ -322,7 +324,7 @@ VALIDATION_STRINGENCY=SILENT
 
 ## --Creating a VCF file to be used as the reference for verifyBamID--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $PIPE_FILES/$VERIFY_VCF \
@@ -349,7 +351,7 @@ $CORE_PATH/$PROJECT/$SM_TAG/Reports/verifyBamID/$SM_TAG".selfSM" \
 
 ## --Generate post BQSR table--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -I $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
 -R $PIPE_FILES/$REF_GENOME \
@@ -363,7 +365,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --Generate BQSR plots--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
 -R $PIPE_FILES/$REF_GENOME \
 -before $CORE_PATH/$PROJECT/$SM_TAG/Reports/Count_Covariates/CSV/$SM_TAG".recal.table" \
@@ -376,7 +378,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 ## --Unified Genotyper, Emit All Sites, SNV model only, Emit and make calls at QUAL>=0, min baseq at 20, no downsampling--
 ## --Call on padded bait--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T UnifiedGenotyper \
 -R $PIPE_FILES/$REF_GENOME \
 --input_file $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
@@ -402,7 +404,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 ## --Filtering "SNVs"--
 ## --Logging_level ERROR is used here--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/RAW_BAIT/$SM_TAG".UG.EAS.raw.OnBait.SNV.vcf" \
@@ -432,7 +434,7 @@ $TABIX_DIR/tabix -h $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/SNV_FILTERED_BAIT/
 
 echo Start ANNOVAR UG `date`
 
-java -jar $CIDRSEQSUITE_DIR/CIDRSeqSuite.jar -pipeline -annovar_annotation \
+$JAVA_DIR/java -jar $CIDRSEQSUITE_DIR/CIDRSeqSuite.jar -pipeline -annovar_annotation \
 $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/SNV_FILTERED_ROI/$SM_TAG".UG.EAS.FILTERED.SNV."$ROI_BED".vcf" \
 $CORE_PATH/$PROJECT/$SM_TAG/temp/ 1
 
@@ -452,7 +454,7 @@ $CORE_PATH/$PROJECT/$SM_TAG/ANALYSIS/$SM_TAG".UG.EAS.FILTERED.SNV."$ROI_BED".vcf
 
 ## Extracting the 91 Barcode SNPs
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/SNV_FILTERED_BAIT/$SM_TAG".UG.EAS.FILTERED.OnBait.SNV.vcf" \
@@ -468,7 +470,7 @@ $CORE_PATH/$PROJECT/$SM_TAG/ANALYSIS/$SM_TAG".UG.EAS.FILTERED.BARCODE.SNV.vcf"
 
 ## Call on Bait (padded)
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R $PIPE_FILES/$REF_GENOME \
 --input_file $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
@@ -492,7 +494,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 ## --HC does not output AlleleBalance--
 ## --VariantAnnotator will add in the ABHet--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T VariantAnnotator \
 -R $PIPE_FILES/$REF_GENOME \
 --input_file $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
@@ -505,7 +507,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 # --Extracting INDELs--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".HC.raw.OnBait.ANNOTATED.vcf" \
@@ -514,7 +516,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --Filtering "INDELs"--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/RAW_BAIT/$SM_TAG".HC.raw.OnBait.INDEL.vcf" \
@@ -542,7 +544,7 @@ $TABIX_DIR/tabix -h $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/INDEL_FILTERED_BAI
 
 ## Extracting MNP, SYMBOLIC, MIXED
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/temp/$SM_TAG".HC.raw.OnBait.ANNOTATED.vcf" \
@@ -553,7 +555,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## --Filtering "MNP, SYMBOLIC, MIXED"--
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/RAW_BAIT/$SM_TAG".HC.raw.OnBait.OTHER.vcf" \
@@ -592,7 +594,7 @@ $CORE_PATH/$PROJECT/$SM_TAG/ANALYSIS/$SM_TAG".HC.FILTERED.OTHER."$ROI_BED".vcf"
 
 echo Start ANNOVAR HC `date`
 
-java -jar $CIDRSEQSUITE_DIR/CIDRSeqSuite.jar -pipeline -annovar_annotation \
+$JAVA_DIR/java -jar $CIDRSEQSUITE_DIR/CIDRSeqSuite.jar -pipeline -annovar_annotation \
 $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/INDEL_FILTERED_ROI/$SM_TAG".HC.FILTERED.INDEL."$ROI_BED".vcf" \
 $CORE_PATH/$PROJECT/$SM_TAG/temp/ 1
 
@@ -617,7 +619,7 @@ grep -v "^#" $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/INDEL_FILTERED_ROI/$SM_TA
 
 ## Use the above bed file to write a HC bam file for ROI indels
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R $PIPE_FILES/$REF_GENOME \
 --input_file $CORE_PATH/$PROJECT/$SM_TAG/BAM/$SM_TAG".bam" \
@@ -628,7 +630,7 @@ java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 
 ## Create a vcf file for passing UG SNVs on bait
 
-java -jar $GATK_DIR/GenomeAnalysisTK.jar \
+$JAVA_DIR/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R $PIPE_FILES/$REF_GENOME \
 --variant $CORE_PATH/$PROJECT/$SM_TAG/VARIANT_CALLS/SNV_FILTERED_BAIT/$SM_TAG".UG.EAS.FILTERED.OnBait.SNV.vcf" \
