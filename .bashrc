@@ -5,13 +5,13 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
-# User specific aliases and functions
-module load gcc/5.1.0
-module load sge/2011.11p1
-
 umask 0007
 
 export PATH=.:/bin:/usr/bin:$PATH
+
+# User specific aliases and functions
+module load gcc/5.1.0
+module load sge/2011.11p1
 
 #######################################
 ##### .bash_history file settings #####
