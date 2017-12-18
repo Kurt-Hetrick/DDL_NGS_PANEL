@@ -3,7 +3,7 @@
 #$ -cwd
 #$ -V
 
-umask 0007
+# umask 0007
 umask
 set
 

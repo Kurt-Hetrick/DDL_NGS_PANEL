@@ -1,0 +1,20 @@
+# Default priority when not specified
+
+-p -500
+
+# Default queue when not specified
+
+-q cgc.q
+
+# Minimum free resources required when submitting a job
+
+-l mem_free=16G
+
+# so you can't submit a job that can never be scheduled.
+# for some reason this is not working as intended...so taking it out.
+
+# -w e
+
+# tell sge to export the users environment variables
+
+-V
